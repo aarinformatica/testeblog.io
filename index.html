@@ -1,34 +1,67 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br" >
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat em Tempo Real</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>Teste com usuarios no mapa</title>
+  
+
 </head>
 <body>
-     <div id="chat-container">
-        <div id="messages"></div>
-        <input id="message-input" type="text" placeholder="Digite sua mensagem...">
-        <button id="send-button">Enviar</button>
-    </div>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="app.js"></script>
-  <script>
-    const socket = io();
+<!-- partial:index.partial.html -->
+<head>
+    <title>Mapa com OpenStreetMap</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 100vh; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+<!-- partial -->
+  <script  src="./script.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+    const map = L.map('map').setView([0, 0], 2);
 
-document.getElementById('send-button').addEventListener('click', () => {
-    const message = document.getElementById('message-input').value;
-    socket.emit('chat message', message);
-    document.getElementById('message-input').value = '';
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    const user1Marker = L.marker([0, 0]).addTo(map).bindPopup('Usuário 1');
+    const user2Marker = L.marker([0, 0]).addTo(map).bindPopup('Usuário 2');
+
+    function updateUserLocation(marker, lat, lon) {
+        marker.setLatLng([lat, lon]);
+        map.setView([lat, lon], 17);
+    }
+
+    function getUserLocation(marker) {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(position => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                updateUserLocation(marker, lat, lon);
+            }, error => {
+                console.error("Erro ao obter localização: ", error);
+            }, {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            });
+        } else {
+            console.error("Geolocalização não é suportada pelo navegador.");
+        }
+    }
+
+    // Atualiza a localização dos usuários a cada 10 segundos
+    setInterval(() => {
+        getUserLocation(user1Marker);
+        getUserLocation(user2Marker);
+    }, 10000);
 });
-
-socket.on('chat message', (msg) => {
-    const item = document.createElement('div');
-    item.textContent = msg;
-    document.getElementById('messages').appendChild(item);
-});
-
-  </script>
+</script>
 </body>
 </html>
